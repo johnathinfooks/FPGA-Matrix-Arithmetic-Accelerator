@@ -2,18 +2,19 @@
 
 module top (
     input logic clk,
-    input logic reset
+    input logic reset,
+    output logic uart_tx_o
 );
 
-// UART serial communication with host
-uart_core uart_core (
+
+
+uart_tx tx (
     .clk(clk),
-    .reset(reset)
+    .reset(reset),
+    .tx_o(uart_tx_o),
+    .tx_start(1'b1),
+    .tx_busy(),
+    .tx_data(8'b00110101) // h35; ascii char '5'
 );
-
-initial begin   
-    
-end
-
 
 endmodule
