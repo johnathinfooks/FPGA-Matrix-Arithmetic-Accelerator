@@ -1,29 +1,37 @@
 `timescale 1ns / 1ps
 
-// @todo: finish documentation
 // @todo: write formal verification
+// @todo: write elaborate documentation
 
 /* -----------------------------------------------------------------
 Design: transmit submodule of uart_core
 Author: Johnathin Fooks
+Date:   19 October 2026
 
 Overview: A finite state machine that has states for the
 UART serial communication protocol. Transmitting on the UART
 protocol is given a data byte, from idle do start bit, do 8 
 bits of data, do end bit, back to idle.
 - IDLE
-- - Idle state of communication. In UART signal is HIGH
+- - Serial output = 1
+- - If start transmit signal: got to START
 - START
 - - Serial output = 0
-- - If single bit period has passed, go to DATA
+- - If single bit period has passed: go to DATA
 - DATA
-- - 
+- - Serial output = data[bit_incrementation_counter]
+- - If we are on the last bit: go to DONE
+- - else: If single bit period has passed increment bit counter
 - DONE
+- - Serial output = dont change since last bit
+- - If single bit period has passed: go to IDLE
 ----------------------------------------------------------------- */
+
+module uart_tx
 
 // ports
 
-module uart_tx (
+(
     input  logic       clock,
     input  logic       reset,
     output logic       tx_o,
@@ -32,7 +40,7 @@ module uart_tx (
     input  logic [7:0] tx_data
 );
 
-// declarations and spaces we will use
+// declarations and spaces used
 
 typedef enum bit [1:0] {
     IDLE  = 2'b00,
@@ -42,12 +50,12 @@ typedef enum bit [1:0] {
 } uart_tx_state_t;
 
 uart_tx_state_t state;
-logic [2:0] bit_i;          // 0-7 bit index
-logic [9:0] cycle_count;    // 0-1023 counter for 868 cycle period from baud rate
-logic [7:0] tx_data_buffer; // buffer for saved data
+logic [2:0] bit_i;
+logic [9:0] cycle_count;
+logic [7:0] tx_data_buffer;
 localparam int unsigned CYCLES_PERIOD = 868;
 
-// combinational logic for current state -> what to do
+// combinational logic for mapping current state to output
 
 always_comb begin
     tx_o    = 1'b1;             // idle
@@ -119,8 +127,8 @@ always_ff @(posedge clock) begin
             end
             
             default: begin
-                state        <= IDLE;
-                bit_i        <= 0;
+                state       <= IDLE;
+                bit_i       <= 0;
                 cycle_count <= 0;
             end
             

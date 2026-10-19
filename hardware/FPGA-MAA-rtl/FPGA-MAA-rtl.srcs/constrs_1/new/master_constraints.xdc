@@ -12,5 +12,5 @@ set_property IOSTANDARD LVCMOS33 [get_ports reset]
 set_property PACKAGE_PIN A18 [get_ports uart_tx_o]
 set_property IOSTANDARD LVCMOS33 [get_ports uart_tx_o]
 
-#set_property PACKAGE_PIN B18 [get_ports uart_rtl_rxd]
-#set_property IOSTANDARD LVCMOS33 [get_ports uart_rtl_rxd]
+set_property PACKAGE_PIN B18 [get_ports uart_rx_i]
+set_property IOSTANDARD LVCMOS33 [get_ports uart_rx_i]

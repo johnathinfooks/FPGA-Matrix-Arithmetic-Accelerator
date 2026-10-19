@@ -1,8 +1,20 @@
 `timescale 1ns / 1ps
 
-module uart_core (
+/* -----------------------------------------------------------------
+Design: uart_core
+Author: Johnathin Fooks
+Date:   19 October 2026
+
+Overview:
+----------------------------------------------------------------- */
+
+module uart_core
+
+// ports
+
+(
     // integration
-    input  logic       clk,
+    input  logic       clock,
     input  logic       reset,
     // rx
     input  logic       rx_i,
@@ -17,7 +29,7 @@ module uart_core (
 );
 
 uart_rx uart_rx (
-    .clk(clk),
+    .clock(clock),
     .reset(reset),
     .rx_i(rx_i),
     .rx_valid(rx_valid),
@@ -25,7 +37,7 @@ uart_rx uart_rx (
 );
 
 uart_tx uart_tx (
-    .clk(clk),
+    .clock(clock),
     .reset(reset),
     .tx_o(tx_o),
     .tx_start(tx_start),
