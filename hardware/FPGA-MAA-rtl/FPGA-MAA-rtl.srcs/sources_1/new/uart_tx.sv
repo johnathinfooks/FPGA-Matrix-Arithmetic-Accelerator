@@ -1,13 +1,38 @@
 `timescale 1ns / 1ps
 
+// @todo: finish documentation
+// @todo: write formal verification
+
+/* -----------------------------------------------------------------
+Design: transmit submodule of uart_core
+Author: Johnathin Fooks
+
+Overview: A finite state machine that has states for the
+UART serial communication protocol. Transmitting on the UART
+protocol is given a data byte, from idle do start bit, do 8 
+bits of data, do end bit, back to idle.
+- IDLE
+- - Idle state of communication. In UART signal is HIGH
+- START
+- - Serial output = 0
+- - If single bit period has passed, go to DATA
+- DATA
+- - 
+- DONE
+----------------------------------------------------------------- */
+
+// ports
+
 module uart_tx (
-    input  logic       clk,
+    input  logic       clock,
     input  logic       reset,
     output logic       tx_o,
-    input  logic       tx_start,
+    input  logic       tx_start, // initiates start of transmit
     output logic       tx_busy,
     input  logic [7:0] tx_data
 );
+
+// declarations and spaces we will use
 
 typedef enum bit [1:0] {
     IDLE  = 2'b00,
@@ -16,35 +41,33 @@ typedef enum bit [1:0] {
     DONE  = 2'b11
 } uart_tx_state_t;
 
-// local spaces and constants we will use
-
 uart_tx_state_t state;
 logic [2:0] bit_i;          // 0-7 bit index
-logic [9:0] baud_counter;   // 0-1023 baud counter for 868 cycle period
+logic [9:0] cycle_count;    // 0-1023 counter for 868 cycle period from baud rate
 logic [7:0] tx_data_buffer; // buffer for saved data
 localparam int unsigned CYCLES_PERIOD = 868;
 
-// combinational stuff based on current state
+// combinational logic for current state -> what to do
 
 always_comb begin
-    tx_o    = 1'b1;
+    tx_o    = 1'b1;             // idle
     tx_busy = (state != IDLE);
 
     case (state)
-        START:   tx_o = 1'b0;
-        DATA:    tx_o = tx_data_buffer[bit_i];
-        default: tx_o = 1'b1; // Idle and stop bit.
+        START:   tx_o = 1'b0;   // start signal
+        DATA:    tx_o = tx_data_buffer[bit_i]; // transmitting data
+        default: tx_o = 1'b1;   // idle
     endcase
 end
 
 // state machine
 
-always_ff @(posedge clk) begin
+always_ff @(posedge clock) begin
 
     if (reset) begin
         state          <= IDLE;
         bit_i          <= 0;
-        baud_counter   <= 0;
+        cycle_count    <= 0;
         tx_data_buffer <= 0;
     end
     
@@ -52,7 +75,7 @@ always_ff @(posedge clk) begin
         case (state)
             
             IDLE: begin
-                baud_counter <= 0;
+                cycle_count <= 0;
                 bit_i <= 0;
                 if (tx_start) begin
                     tx_data_buffer <= tx_data;
@@ -61,18 +84,18 @@ always_ff @(posedge clk) begin
             end
             
             START: begin
-                if (baud_counter == CYCLES_PERIOD - 1) begin
-                    baud_counter <= 0;
+                if (cycle_count == CYCLES_PERIOD - 1) begin
+                    cycle_count <= 0;
                     state <= DATA;
                 end
                 else begin
-                    baud_counter <= baud_counter + 1;
+                    cycle_count <= cycle_count + 1;
                 end
             end
             
             DATA: begin
-                if (baud_counter == CYCLES_PERIOD - 1) begin
-                    baud_counter <= 0;
+                if (cycle_count == CYCLES_PERIOD - 1) begin
+                    cycle_count <= 0;
                     if (bit_i == 7) begin
                         state <= DONE;
                     end
@@ -81,28 +104,28 @@ always_ff @(posedge clk) begin
                     end
                 end
                 else begin
-                    baud_counter <= baud_counter + 1;
+                    cycle_count <= cycle_count + 1;
                 end
             end
             
             DONE: begin
-                if (baud_counter == CYCLES_PERIOD - 1) begin
-                    baud_counter <= 0;
+                if (cycle_count == CYCLES_PERIOD - 1) begin
+                    cycle_count <= 0;
                     state <= IDLE;
                 end
                 else begin
-                    baud_counter <= baud_counter + 1;
+                    cycle_count <= cycle_count + 1;
                 end
             end
             
             default: begin
                 state        <= IDLE;
                 bit_i        <= 0;
-                baud_counter <= 0;
+                cycle_count <= 0;
             end
             
         endcase
     end
 end
 
-endmodule
+endmodule : uart_tx

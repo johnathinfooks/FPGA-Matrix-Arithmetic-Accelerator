@@ -1,15 +1,13 @@
 `timescale 1ns / 1ps
 
 module top (
-    input logic clk,
+    input logic clock,
     input logic reset,
     output logic uart_tx_o
 );
 
-
-
 uart_tx tx (
-    .clk(clk),
+    .clock(clock),
     .reset(reset),
     .tx_o(uart_tx_o),
     .tx_start(1'b1),
